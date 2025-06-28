@@ -37,12 +37,13 @@ All requests return a complete JSON response with the AI's answer. The code auto
 import requests
 import json
 
-def send_message(message, agent="super_agent", subscription_key="YOUR_KEY"):
+def send_message(message, agent="super_agent", subscription_key="SUBSCRIPTION_KEY"):
     """
     Send a message to the AI and get a complete response
     Automatically handles both short and long requests
     """
 
+    # Using tunnel URL
     url = "https://api.sunflareai.com/api/v2/message"
     headers = {
         "Content-Type": "application/json",
@@ -53,36 +54,61 @@ def send_message(message, agent="super_agent", subscription_key="YOUR_KEY"):
         "agent": agent
     }
 
+    print(f"🚀 Sending request to: {url}")
+    print(f"📝 Message: {message}")
+    print(f"🤖 Agent: {agent}")
+    print(f"🔑 Subscription Key: {subscription_key[:8]}...")
+    print()
+
     response = requests.post(url, headers=headers, json=data, stream=True)
 
     if response.status_code == 200:
+        print(f"✅ Response Status: {response.status_code}")
+        print(f"📡 Headers: {dict(response.headers)}")
+        print()
+        
         # Check if response is chunked (for long requests)
         if response.headers.get('transfer-encoding') == 'chunked':
+            print("🔄 Handling streaming response...")
             # Handle streaming response - extract final result
             for line in response.iter_lines(decode_unicode=True):
                 if line:
                     try:
                         data = json.loads(line)
+                        print(f"📦 Chunk received: {line[:100]}...")
                         # Return the final response when we get it
                         if data.get("response"):
+                            print("✅ Final response found!")
                             return data
                     except json.JSONDecodeError:
                         continue
         else:
+            print("📄 Handling normal response...")
             # Handle normal response (for short requests)
             return response.json()
     else:
+        print(f"❌ Request failed: {response.status_code}")
+        print(f"📄 Response text: {response.text}")
         raise Exception(f"Request failed: {response.status_code} - {response.text}")
 
 # Example usage
-try:
-    result = send_message("Hello! How are you?")
-    print(f"AI Response: {result['response']}")
-    print(f"Agent used: {result['agentUsed']}")
-    print(f"Response time: {result['responseTime']}s")
+if __name__ == "__main__":
+    try:
+        print("🐍 Testing Python Integration Example")
+        print("=" * 50)
+        
+        result = send_message("Hello! How are you today? Please give me a brief greeting.")
+        
+        print("🎉 SUCCESS! Response received:")
+        print("=" * 50)
+        print(f"🤖 AI Response: {result.get('response', 'No response field')}")
+        print(f"🔧 Agent used: {result.get('agentUsed', 'Unknown')}")
+        print(f"⏱️ Response time: {result.get('responseTime', 'Unknown')}s")
+        print(f"🆔 Request ID: {result.get('requestId', 'Unknown')}")
+        print(f"✅ Success: {result.get('success', 'Unknown')}")
 
-except Exception as e:
-    print(f"Error: {e}")
+    except Exception as e:
+        print(f"❌ Error: {e}")
 ```
 
 ---
@@ -90,15 +116,16 @@ except Exception as e:
 ## 🟢 Node.js Integration
 
 ```javascript
-const https = require('https');
+const https = require('https'); // Using https for tunnel
 
-function sendMessage(message, agent = 'super_agent', subscriptionKey = 'YOUR_KEY') {
+function sendMessage(message, agent = 'super_agent', subscriptionKey = 'SUBSCRIPTION_KEY') {
     return new Promise((resolve, reject) => {
         const postData = JSON.stringify({
             message: message,
             agent: agent
         });
 
+        // Using tunnel URL
         const options = {
             hostname: 'api.sunflareai.com',
             port: 443,
@@ -111,24 +138,42 @@ function sendMessage(message, agent = 'super_agent', subscriptionKey = 'YOUR_KEY
             }
         };
 
+        console.log('🚀 Sending request to:', `https://${options.hostname}${options.path}`);
+        console.log('📝 Message:', message);
+        console.log('🤖 Agent:', agent);
+        console.log('🔑 Subscription Key:', subscriptionKey.substring(0, 8) + '...');
+        console.log();
+
         const req = https.request(options, (res) => {
             let data = '';
             let finalResponse = null;
 
+            console.log('✅ Response Status:', res.statusCode);
+            console.log('📡 Headers:', res.headers);
+            console.log();
+
             // Check if response is chunked (for long requests)
             const isStreaming = res.headers['transfer-encoding'] === 'chunked';
+
+            if (isStreaming) {
+                console.log('🔄 Handling streaming response...');
+            } else {
+                console.log('📄 Handling normal response...');
+            }
 
             res.on('data', (chunk) => {
                 const chunkStr = chunk.toString();
                 data += chunkStr;
 
                 if (isStreaming) {
+                    console.log('📦 Chunk received:', chunkStr.substring(0, 100) + '...');
                     // Handle streaming chunks - look for final response
                     const lines = chunkStr.split('\n').filter(line => line.trim());
                     for (const line of lines) {
                         try {
                             const parsed = JSON.parse(line);
                             if (parsed.response) {
+                                console.log('✅ Final response found!');
                                 finalResponse = parsed;
                             }
                         } catch (parseError) {
@@ -153,8 +198,15 @@ function sendMessage(message, agent = 'super_agent', subscriptionKey = 'YOUR_KEY
             });
         });
 
-        req.on('error', reject);
+        req.on('error', (error) => {
+            console.log('❌ Request error:', error.message);
+            console.log('❌ Error code:', error.code);
+            console.log('❌ Error details:', error);
+            reject(error);
+        });
+
         req.on('timeout', () => {
+            console.log('⏰ Timeout event fired');
             req.destroy();
             reject(new Error('Request timeout'));
         });
@@ -167,13 +219,21 @@ function sendMessage(message, agent = 'super_agent', subscriptionKey = 'YOUR_KEY
 // Example usage
 async function example() {
     try {
-        const result = await sendMessage("Hello! How are you?");
-        console.log(`AI Response: ${result.response}`);
-        console.log(`Agent used: ${result.agentUsed}`);
-        console.log(`Response time: ${result.responseTime}s`);
+        console.log('🟢 Testing Node.js Integration Example');
+        console.log('='.repeat(50));
+        
+        const result = await sendMessage("Hello! How are you today? Please give me a brief greeting.");
+        
+        console.log('🎉 SUCCESS! Response received:');
+        console.log('='.repeat(50));
+        console.log('🤖 AI Response:', result.response || 'No response field');
+        console.log('🔧 Agent used:', result.agentUsed || 'Unknown');
+        console.log('⏱️ Response time:', (result.responseTime || 'Unknown') + 's');
+        console.log('🆔 Request ID:', result.requestId || 'Unknown');
+        console.log('✅ Success:', result.success || 'Unknown');
 
     } catch (error) {
-        console.error(`Error: ${error.message}`);
+        console.error('❌ Error:', error.message);
     }
 }
 
