@@ -116,7 +116,7 @@ if __name__ == "__main__":
 ## 🟢 Node.js Integration
 
 ```javascript
-const https = require('https'); // Using https for tunnel
+const https = require('https');
 
 function sendMessage(message, agent = 'super_agent', subscriptionKey = 'SUBSCRIPTION_KEY') {
     return new Promise((resolve, reject) => {
@@ -125,7 +125,6 @@ function sendMessage(message, agent = 'super_agent', subscriptionKey = 'SUBSCRIP
             agent: agent
         });
 
-        // Using tunnel URL
         const options = {
             hostname: 'api.sunflareai.com',
             port: 443,
@@ -198,18 +197,22 @@ function sendMessage(message, agent = 'super_agent', subscriptionKey = 'SUBSCRIP
             });
         });
 
+        // CORRECT ERROR HANDLING - No timeout listener without setTimeout
         req.on('error', (error) => {
             console.log('❌ Request error:', error.message);
             console.log('❌ Error code:', error.code);
-            console.log('❌ Error details:', error);
             reject(error);
         });
 
-        req.on('timeout', () => {
-            console.log('⏰ Timeout event fired');
-            req.destroy();
-            reject(new Error('Request timeout'));
-        });
+        // OPTION 1: No timeout (let server handle it)
+        // This is the cleanest approach for AI APIs
+        
+        // OPTION 2: If you want a timeout, set it explicitly
+        // req.setTimeout(300000, () => {  // 5 minutes
+        //     console.log('⏰ Request timeout after 5 minutes');
+        //     req.destroy();
+        //     reject(new Error('Request timeout'));
+        // });
 
         req.write(postData);
         req.end();
@@ -219,7 +222,7 @@ function sendMessage(message, agent = 'super_agent', subscriptionKey = 'SUBSCRIP
 // Example usage
 async function example() {
     try {
-        console.log('🟢 Testing Node.js Integration Example');
+        console.log('🟢 Testing CORRECTED Node.js Integration');
         console.log('='.repeat(50));
         
         const result = await sendMessage("Hello! How are you today? Please give me a brief greeting.");
@@ -234,6 +237,7 @@ async function example() {
 
     } catch (error) {
         console.error('❌ Error:', error.message);
+        console.error('❌ Error details:', error);
     }
 }
 
