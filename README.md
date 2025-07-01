@@ -294,7 +294,7 @@ example();
 ## 💻 cURL Integration
 
 ```bash
-# Basic request
+# Basic request (short responses - returns JSON)
 curl -X POST https://api.sunflareai.com/api/v2/message \
   -H "Content-Type: application/json" \
   -H "subscription-key: YOUR_SUBSCRIPTION_KEY" \
@@ -312,6 +312,46 @@ curl -X POST https://api.sunflareai.com/api/v2/message \
     "agent": "super_agent"
   }' | jq '.'
 
+# Long/complex request (automatically uses streaming)
+# Shows real-time Server-Sent Events (SSE) as the AI works
+curl -X POST https://api.sunflareai.com/api/v2/message \
+  -H "Content-Type: application/json" \
+  -H "subscription-key: YOUR_SUBSCRIPTION_KEY" \
+  -d '{
+    "message": "Research the latest AI developments and compare API pricing",
+    "agent": "super_agent"
+  }'
+
+# Extract final response from streaming (using grep and tail)
+curl -X POST https://api.sunflareai.com/api/v2/message \
+  -H "Content-Type: application/json" \
+  -H "subscription-key: YOUR_SUBSCRIPTION_KEY" \
+  -d '{
+    "message": "Research the latest AI developments",
+    "agent": "super_agent"
+  }' | grep '"type":"stream_complete"' | tail -1
+```
+
+### Understanding cURL Streaming Responses
+
+When you send a complex request, the API automatically switches to **Server-Sent Events (SSE)** format. You'll see output like:
+
+```
+data: {"type":"stream_start","data":{"message":"Request received, processing...","timestamp":1751376835475}}
+
+data: {"type":"stream_chunk","data":{"content":"I'll help you research...","timestamp":1751376842692}}
+
+data: {"type":"stream_chunk","data":{"content":"More detailed information...","timestamp":1751376849055}}
+
+data: {"type":"stream_complete","data":{"response":"Complete AI response here","responseTime":106.548,"agentUsed":"super_agent","timestamp":1751376942022}}
+```
+
+**Event Types:**
+- `stream_start` - Request acknowledged and processing begins
+- `stream_chunk` - Progressive content as the AI works
+- `stream_complete` - Final response with complete data and metadata
+
+```bash
 # Different AI Models
 # Claude Opus for complex reasoning
 curl -X POST https://api.sunflareai.com/api/v2/message \
